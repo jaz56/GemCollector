@@ -5,7 +5,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -21,41 +20,40 @@ public class GameWinController {
     @FXML
     private Button quitButton;
 
-    @FXML
-    private ImageView trophyImage;
-
     private int finalScore;
 
-    /**
-     * Initialise le score final à afficher.
-     */
     public void setFinalScore(int score) {
         this.finalScore = score;
-        finalScoreLabel.setText("Score: " + finalScore);
+        finalScoreLabel.setText("Score final : " + finalScore);
     }
 
     @FXML
     public void initialize() {
-        // Action bouton Play Again
+
+        // Bouton Restart -> relancer une nouvelle session propre
         playAgainButton.setOnAction(event -> {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameWinUI.fxml"));
-                Stage stage = (Stage) playAgainButton.getScene().getWindow();
-                stage.setScene(new Scene(loader.load()));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameUI.fxml"));
+                Scene gameScene = new Scene(loader.load());
 
-                // Si tu veux réinitialiser le jeu, tu peux accéder au controller du GameUI
+                // Récupérer le GameController pour réinitialiser la partie
                 GameController controller = loader.getController();
+
+                // Lancer une nouvelle session (score = 0, vies = réinitialisées)
                 controller.launchNewTrial();
+
+                Stage stage = (Stage) playAgainButton.getScene().getWindow();
+                stage.setScene(gameScene);
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
 
-        // Action bouton Quit
+        // Bouton Quit -> quitter
         quitButton.setOnAction(event -> {
             Stage stage = (Stage) quitButton.getScene().getWindow();
-            stage.close();  // ferme la fenêtre
+            stage.close();
         });
     }
 }

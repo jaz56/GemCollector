@@ -13,31 +13,66 @@ public class GameOverController {
 
     @FXML
     private Button restartButton;
-    @FXML private Label gameOverLabel;
 
     @FXML
+    private Button quitButton;
+
+    @FXML
+    private Label gameOverLabel;
+
+    @FXML
+    private Label scoreLabel;
+
+    private int finalScore;
+
+    public void setFinalScore(int score) {
+        this.finalScore = score;
+        if (scoreLabel != null) {
+            scoreLabel.setText("Score: " + finalScore);
+        }
+    }
+    @FXML
     public void initialize() {
-        restartButton.setOnAction(e -> restartGame());
-        restartButton.setLayoutX((600 - restartButton.getPrefWidth()) / 2);
-        gameOverLabel.setLayoutX(0); // car il a prefWidth="600"
+        // Centrer les boutons en code si nécessaire
+        restartButton.setLayoutX((800 - restartButton.getPrefWidth()) / 2);
+        quitButton.setLayoutX((800 - quitButton.getPrefWidth()) / 2);
+
+        // Action bouton restart
+        restartButton.setOnAction(event -> restartGame());
+
+        // Action bouton quit
+        quitButton.setOnAction(event -> {
+            Stage stage = (Stage) quitButton.getScene().getWindow();
+            stage.close();
+        });
     }
 
+    /** =======================
+     *  Permet au GameController
+     *  d'envoyer le score final
+     *  ======================= */
+
+
+    /** ========= RESTART GAME ========= */
     private void restartGame() {
         try {
-            // Charger le FXML du jeu principal avec un chemin ABSOLU
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameUI.fxml"));
             Stage stage = (Stage) restartButton.getScene().getWindow();
             Scene scene = new Scene(loader.load());
             stage.setScene(scene);
-            stage.show();
 
-            // Optionnel : si tu veux récupérer le contrôleur du jeu
+            // Récupérer le controller du jeu pour lancer une nouvelle partie
             GameController gameController = loader.getController();
-            // Tu peux réinitialiser des valeurs si besoin
-            // gameController.resetGame(); // ajouter une méthode si nécessaire
+            gameController.launchNewTrial();
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+
+    /** ========= QUIT GAME ========= */
+    private void quitGame() {
+        Stage stage = (Stage) quitButton.getScene().getWindow();
+        stage.close();
     }
 }

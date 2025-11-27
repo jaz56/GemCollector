@@ -3,46 +3,65 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.effect.DropShadow?>
-<?import javafx.geometry.Pos?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0"
+<AnchorPane prefHeight="600.0" prefWidth="800.0"
             style="-fx-background-color: linear-gradient(to bottom, #001f3f, #004b8d);"
             xmlns="http://javafx.com/javafx/25"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="gemcollector.entities.GameOverController">
 
-    <!-- GAME OVER Label -->
+    <!-- GAME OVER Title -->
     <Label fx:id="gameOverLabel"
            text="GAME OVER"
-           layoutX="0" layoutY="120"
-           prefWidth="600"
+           layoutY="170"
+           prefWidth="800"
            alignment="CENTER"
-           textFill="#66CCFF"
-           style="-fx-font-size: 48px; -fx-font-weight: bold;"
-    >
+           style="-fx-font-size: 70px; -fx-font-weight: bold; -fx-text-fill: #FF4444;">
         <effect>
-            <DropShadow radius="20" color="#00Aaff"/>
+            <DropShadow radius="25" color="#AA0000"/>
         </effect>
     </Label>
+
+    <!-- Score Final -->
+    <Label fx:id="scoreLabel"
+           text="Score : 0"
+           layoutY="270"
+           prefWidth="800"
+           alignment="CENTER"
+           style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #FFFFFF;"/>
 
     <!-- Restart Button -->
     <Button fx:id="restartButton"
             text="RESTART"
-            layoutX="0" layoutY="230"
-            prefWidth="200" prefHeight="50"
-            alignment="CENTER"
-            style="
-                -fx-background-color: linear-gradient(to bottom, #0099ff, #0066cc);
-                -fx-text-fill: white;
-                -fx-font-size: 20px;
-                -fx-font-weight: bold;
-                -fx-background-radius: 12;
-                -fx-cursor: hand;
-            "
-    >
+            layoutY="350"
+            prefWidth="200" prefHeight="60"
+            layoutX="300"
+            style="-fx-background-color: linear-gradient(to bottom, #ff4444, #cc0000);
+                   -fx-text-fill: white;
+                   -fx-font-size: 24px;
+                   -fx-font-weight: bold;
+                   -fx-background-radius: 14;
+                   -fx-cursor: hand;">
         <effect>
-            <DropShadow radius="10" color="#003366"/>
+            <DropShadow radius="12" color="#660000"/>
+        </effect>
+    </Button>
+
+    <!-- Quit Button -->
+    <Button fx:id="quitButton"
+            text="QUIT"
+            layoutY="440"
+            prefWidth="200" prefHeight="60"
+            layoutX="300"
+            style="-fx-background-color: linear-gradient(to bottom, #666666, #333333);
+                   -fx-text-fill: white;
+                   -fx-font-size: 24px;
+                   -fx-font-weight: bold;
+                   -fx-background-radius: 14;
+                   -fx-cursor: hand;">
+        <effect>
+            <DropShadow radius="12" color="#222222"/>
         </effect>
     </Button>
 

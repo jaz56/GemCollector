@@ -1,5 +1,6 @@
 package gemcollector.entities;
 
+import gemcollector.entities.GameOverController ;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
@@ -169,12 +170,19 @@ public class GameController implements Updatable {
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameWinUI.fxml"));
+            Scene winScene = new Scene(loader.load());
+
+            // Récupérer le contrôleur et lui envoyer le score final
+            GameWinController controller = loader.getController();
+            controller.setFinalScore(score);
+
             Stage stage = (Stage) gameCanvas.getScene().getWindow();
-            stage.setScene(new Scene(loader.load()));
+            stage.setScene(winScene);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
 
     private void render() {
@@ -197,12 +205,21 @@ public class GameController implements Updatable {
 
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameOverUI.fxml"));
+            Scene scene = new Scene(loader.load());
+
+            // Récupérer le contrôleur et lui passer le score final
+            GameOverController controller = loader.getController();
+            controller.setFinalScore(score); // <-- score final avant la perte
+
             Stage stage = (Stage) gameCanvas.getScene().getWindow();
-            stage.setScene(new Scene(loader.load()));
+            stage.setScene(scene);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+
 
     private void showMessage(String message, double durationSeconds) {
         messageLabel.setText(message);
