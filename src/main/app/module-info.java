@@ -6,6 +6,7 @@ module com.example.gemcollector {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires com.almasb.fxgl.all;
+    requires javafx.media;
 
     exports gemcollector.core;
     exports gemcollector.entities;

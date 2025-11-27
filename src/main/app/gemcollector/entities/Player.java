@@ -13,6 +13,9 @@ public non-sealed class Player extends Entity implements Updatable {
     private double speed = 5; // pixels par frame
     private Direction direction = Direction.NONE;
     private List<Wall> walls; // murs pour collision
+    private double shakeX = 0;
+    private double shakeY = 0;
+    private boolean glowEffect = false;
 
     public enum Direction { UP, DOWN, LEFT, RIGHT, NONE }
 
@@ -71,16 +74,38 @@ public non-sealed class Player extends Entity implements Updatable {
         return true;
     }
 
+
+    public void setShakeOffset(double x, double y) {
+        this.shakeX = x;
+        this.shakeY = y;
+    }
+    public void setGlow(boolean glow) {
+        this.glowEffect = glow;
+    }
     @Override
     public void render(GraphicsContext gc) {
         if (!visible) return;
 
+        double x = position.x() + shakeX;
+        double y = position.y() + shakeY;
+
+        // ★ Glow rouge quand touché ★
+        if (glowEffect) {
+            gc.setFill(Color.rgb(255, 0, 0, 0.4));
+            gc.fillOval(x - 10, y - 10, size.width() + 20, size.height() + 20);
+        }
+
+        // ★ Flash (clignotement) : visible seulement 1 frame sur 2 ★
+        if (glowEffect && Math.random() < 0.5) return;
+
+        // Dessin du sprite Pac-Man
         if (sprite != null) {
-            gc.drawImage(sprite, position.x(), position.y(), size.width(), size.height());
+            gc.drawImage(sprite, x, y, size.width(), size.height());
         } else {
-            // fallback si l'image n'est pas trouvée
             gc.setFill(Color.YELLOW);
-            gc.fillOval(position.x(), position.y(), size.width(), size.height());
+            gc.fillOval(x, y, size.width(), size.height());
         }
     }
+
+
 }

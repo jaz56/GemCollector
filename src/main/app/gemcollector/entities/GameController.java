@@ -10,9 +10,15 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.media.AudioClip;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.scene.media.AudioClip;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import java.nio.file.Paths;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +44,12 @@ public class GameController implements Updatable {
     private boolean gameOver = false;
 
     private Timeline gameLoop;
+    // Effet visuel de collision
+    private boolean playerHit = false;
+    private double hitEffectTime = 0;
+
+    private AudioClip gameOverSound;
+    private MediaPlayer bgMusicPlayer;
 
     @FXML
     public void initialize() {
@@ -45,8 +57,23 @@ public class GameController implements Updatable {
         initEntities();
         render();
         setupStartButton();
+        gameOverSound = new AudioClip(
+                getClass().getResource("/com/example/gemcollector/entities/sounds/pacman_fail_glitch_long.wav").toExternalForm()
+        );
+        setupBackgroundMusic();
     }
-
+    private void setupBackgroundMusic() {
+        try {
+            String path = Paths.get("src/main/resources/com/example/gemcollector/entities/sounds/playing-pac-man-6783.mp3").toUri().toString();
+            Media bgMusic = new Media(path);
+            bgMusicPlayer = new MediaPlayer(bgMusic);
+            bgMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE); // boucle infinie
+            bgMusicPlayer.setVolume(0.3); // ajuster le volume
+            bgMusicPlayer.play();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     private void initWalls() {
         try {
             walls.add(new Wall(0, 0, gameCanvas.getWidth(), 20)); // haut
@@ -122,7 +149,21 @@ public class GameController implements Updatable {
     public void update(double deltaTime) {
         if (gameOver) return;
 
-        // Mise à jour du player (collision murs incluse)
+        // Effet visuel si le joueur a été touché
+        if (playerHit) {
+            hitEffectTime -= deltaTime;
+            if (hitEffectTime <= 0) {
+                playerHit = false;
+                player.setShakeOffset(0, 0);
+            } else {
+                // Apply shake effect : oscillation rapide
+                double offsetX = (Math.random() - 0.5) * 10;
+                double offsetY = (Math.random() - 0.5) * 10;
+                player.setShakeOffset(offsetX, offsetY);
+            }
+        }
+
+        // Mise à jour du player
         player.update(deltaTime);
 
         // Mise à jour des ennemis
@@ -145,24 +186,27 @@ public class GameController implements Updatable {
                 .forEach(enemy -> {
                     lives--;
                     livesLabel.setText("Lives: " + lives);
-                    player.moveTo(new Position(120, 180));
                     showMessage("Enemy hit!", 1);
+
+                    // ★ Effets visuels déclenchés ici ★
+                    playerHit = true;
+                    hitEffectTime = 0.6; // durée de l'effet
+
+                    player.moveTo(new Position(120, 180));
 
                     if (lives <= 0) triggerGameOver();
                 });
 
-        // Vérifier si tous les gems sont collectés
+        // Tous les gems collectés ?
         boolean allGemsCollected = gems.stream().noneMatch(Gem::isVisible);
         if (allGemsCollected) {
-            if (lives > 0) {
-                triggerWinGame();
-            } else {
-                triggerGameOver();
-            }
+            if (lives > 0) triggerWinGame();
+            else triggerGameOver();
         }
 
         render();
     }
+
 
     private void triggerWinGame() {
         stopGame();
@@ -203,21 +247,37 @@ public class GameController implements Updatable {
         stopGame();
         gameOver = true;
 
+        // 🔥 Stopper la musique de fond
+        if (bgMusicPlayer != null) {
+            bgMusicPlayer.stop();
+        }
+
+        // 🔊 Jouer le son d'échec
+        if (gameOverSound != null) {
+            gameOverSound.play();
+        }
+
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameOverUI.fxml"));
-            Scene scene = new Scene(loader.load());
+            // Charger le FXML
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(getClass().getResource("/com/example/gemcollector/entities/GameOverUI.fxml"));
+            AnchorPane root = loader.load();
 
-            // Récupérer le contrôleur et lui passer le score final
+            // Récupérer le contrôleur et passer le score final
             GameOverController controller = loader.getController();
-            controller.setFinalScore(score); // <-- score final avant la perte
+            controller.setFinalScore(score);
 
+            // Créer la scène et l'afficher
+            Scene scene = new Scene(root);
             Stage stage = (Stage) gameCanvas.getScene().getWindow();
             stage.setScene(scene);
+            stage.show();
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
 
 
