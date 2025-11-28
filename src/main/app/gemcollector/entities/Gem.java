@@ -9,13 +9,16 @@ public final class Gem extends Entity implements Updatable {
     private boolean collected = false; // indique si la gemme a été collectée
     private Image sprite;
 
-    // Constructeur
     public Gem(double x, double y, double width, double height) throws InvalidPositionException {
-        super(x, y, width, height);
+        super(x, y, width * 2.5, height * 2.5);  // ← gemme 2.5x plus grande
 
-        // Charger l'image de la gemme
-        sprite = new Image(getClass().getResourceAsStream("/com/example/gemcollector/entities/images/gem-removebg-preview.png"));
+        sprite = new Image(getClass().getResourceAsStream(
+                "/com/example/gemcollector/entities/images/harrissa-removebg-preview.png"
+        ));
     }
+
+
+
 
     @Override
     public void render(GraphicsContext gc) {

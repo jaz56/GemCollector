@@ -24,7 +24,7 @@ public non-sealed class Player extends Entity implements Updatable {
         super(x, y, width, height);
 
         // Sprite Pac-Man (assure-toi que l'image existe)
-        sprite = new Image(getClass().getResourceAsStream("/com/example/gemcollector/entities/images/packman-removebg-preview.png"));
+        sprite = new Image(getClass().getResourceAsStream("/com/example/gemcollector/entities/images/3othman-removebg-preview.png"));
     }
 
     // Setter et getter de la direction
