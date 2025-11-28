@@ -6,19 +6,36 @@ import javafx.scene.paint.Color;
 
 public final class Gem extends Entity implements Updatable {
 
-    private boolean collected = false; // indique si la gemme a été collectée
+    private boolean collected = false;
     private Image sprite;
+    private GemType type;
 
-    public Gem(double x, double y, double width, double height) throws InvalidPositionException {
-        super(x, y, width * 2.5, height * 2.5);  // ← gemme 2.5x plus grande
+    // Gem types
+    public enum GemType {
+        HARISSA("/com/example/gemcollector/entities/images/harrissa-removebg-preview.png"),
+        BAMBALOUNI("/com/example/gemcollector/entities/images/bambalouni-removebg-preview.png");
 
-        sprite = new Image(getClass().getResourceAsStream(
-                "/com/example/gemcollector/entities/images/harrissa-removebg-preview.png"
-        ));
+        private final String path;
+
+        GemType(String path) {
+            this.path = path;
+        }
+
+        public String getPath() {
+            return path;
+        }
     }
 
+    // Constructor
+    public Gem(double x, double y, double width, double height, GemType type)
+            throws InvalidPositionException {
+        super(x, y, width * 2.5, height * 2.5);  // bigger gems
 
+        this.type = type;
 
+        // Load sprite depending on type
+        sprite = new Image(getClass().getResourceAsStream(type.getPath()));
+    }
 
     @Override
     public void render(GraphicsContext gc) {
@@ -27,7 +44,6 @@ public final class Gem extends Entity implements Updatable {
         if (sprite != null) {
             gc.drawImage(sprite, position.x(), position.y(), size.width(), size.height());
         } else {
-            // fallback si image non trouvée
             gc.setFill(Color.GREEN);
             gc.fillOval(position.x(), position.y(), size.width(), size.height());
         }
@@ -35,23 +51,24 @@ public final class Gem extends Entity implements Updatable {
 
     @Override
     public void update(double deltaTime) {
-        // Les gemmes ne bougent pas
-        // Optionnel : debug
-        // if (!collected) System.out.println("Gem at x=" + position.x() + ", y=" + position.y());
+        // No movement for gems
     }
 
     public void collect() {
         collected = true;
-        setVisible(false); // La gemme disparaît après collecte
+        setVisible(false);
     }
 
     public boolean isCollected() {
         return collected;
     }
 
-    // Remettre la gemme visible (utile pour relancer une nouvelle épreuve)
     public void reset() {
         collected = false;
         setVisible(true);
+    }
+
+    public GemType getType() {
+        return type;
     }
 }

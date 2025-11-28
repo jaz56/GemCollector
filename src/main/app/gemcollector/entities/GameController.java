@@ -104,12 +104,15 @@ public class GameController implements Updatable {
             entities.addAll(enemies);
 
             // Gems
-            Gem g1 = new Gem(600, 200, 20, 20);
-            Gem g2 = new Gem(150, 400, 20, 20);
-            Gem g3 = new Gem(700, 350, 20, 20);
+            Gem g1 = new Gem(600, 200, 20, 20 , Gem.GemType.BAMBALOUNI);
+            Gem g2 = new Gem(150, 400, 20, 20,  Gem.GemType.HARISSA);
+            Gem g3 = new Gem(700, 350, 20, 20 ,  Gem.GemType.BAMBALOUNI);
+            Gem g4 = new Gem(300, 500, 20, 20 ,  Gem.GemType.HARISSA);
+
             gems.add(g1);
             gems.add(g2);
             gems.add(g3);
+            gems.add(g4);
             entities.addAll(gems);
 
         } catch (InvalidPositionException e) {

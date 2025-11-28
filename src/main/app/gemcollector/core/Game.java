@@ -54,7 +54,8 @@ public class Game extends CoreComponent {
             // Créer les entités
             player = new Player(50, 50, 30, 30);
             enemy = new Enemy(200, 100, 30, 30, walls);
-            gem = new Gem(300, 200, 20, 20);
+            new Gem(100, 200, 20, 20, Gem.GemType.HARISSA);
+            new Gem(300, 150, 20, 20, Gem.GemType.BAMBALOUNI);
 
             // Ajouter les entités à la liste
             entities.add(player);
