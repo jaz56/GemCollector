@@ -1,6 +1,6 @@
 package gemcollector.entities;
 
-import gemcollector.entities.GameOverController ;
+import gemcollector.core.TileMap;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
@@ -10,19 +10,21 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.media.AudioClip;
-import javafx.scene.paint.Color;
-import javafx.stage.Stage;
-import javafx.util.Duration;
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
-import java.nio.file.Paths;
+import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public class GameController implements Updatable {
 
@@ -32,6 +34,7 @@ public class GameController implements Updatable {
     @FXML private Button startButton;
     @FXML private Label messageLabel;
 
+    private TileMap tileMap;
     private Player player;
     private List<Enemy> enemies = new ArrayList<>();
     private List<Gem> gems = new ArrayList<>();
@@ -39,81 +42,122 @@ public class GameController implements Updatable {
 
     private final List<Updatable> entities = new ArrayList<>();
 
+    // ⭐ SOLUTION : Set pour tracker les touches enfoncées
+    private final Set<KeyCode> pressedKeys = new HashSet<>();
+
     private int score = 0;
     private int lives = 3;
     private boolean gameOver = false;
 
     private Timeline gameLoop;
-    // Effet visuel de collision
     private boolean playerHit = false;
     private double hitEffectTime = 0;
 
     private AudioClip gameOverSound;
     private MediaPlayer bgMusicPlayer;
 
+    private Random random = new Random();
+    private static final double CELL_SIZE = 32;
+
     @FXML
     public void initialize() {
-        initWalls();
+        tileMap = new TileMap(gameCanvas.getWidth(), gameCanvas.getHeight(), CELL_SIZE);
+        walls = tileMap.getWalls();
+
         initEntities();
         render();
+
         setupStartButton();
-        gameOverSound = new AudioClip(
-                getClass().getResource("/com/example/gemcollector/entities/sounds/pacman_fail_glitch_long.wav").toExternalForm()
-        );
+        setupSounds();
         setupBackgroundMusic();
     }
+
+    private void setupSounds() {
+        try {
+            gameOverSound = new AudioClip(
+                    getClass().getResource("/com/example/gemcollector/entities/sounds/pacman_fail_glitch_long.wav").toExternalForm()
+            );
+        } catch (Exception e) {
+            System.out.println("Son Game Over non trouvé");
+        }
+    }
+
     private void setupBackgroundMusic() {
         try {
             String path = Paths.get("src/main/resources/com/example/gemcollector/entities/sounds/playing-pac-man-6783.mp3").toUri().toString();
             Media bgMusic = new Media(path);
             bgMusicPlayer = new MediaPlayer(bgMusic);
-            bgMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE); // boucle infinie
-            bgMusicPlayer.setVolume(0.3); // ajuster le volume
+            bgMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+            bgMusicPlayer.setVolume(0.3);
             bgMusicPlayer.play();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Musique de fond non trouvée");
         }
     }
-    private void initWalls() {
-        try {
-            walls.add(new Wall(0, 0, gameCanvas.getWidth(), 20)); // haut
-            walls.add(new Wall(0, gameCanvas.getHeight() - 20, gameCanvas.getWidth(), 20)); // bas
-            walls.add(new Wall(0, 0, 20, gameCanvas.getHeight())); // gauche
-            walls.add(new Wall(gameCanvas.getWidth() - 20, 0, 20, gameCanvas.getHeight())); // droite
 
-            entities.addAll(walls);
-        } catch (InvalidPositionException e) {
-            e.printStackTrace();
-        }
-    }
+    // ⭐ VERSION ALTERNATIVE avec gems TRÈS DENSES comme Pac-Man
+// Remplace initEntities() dans GameController si tu veux plus de gems
 
     private void initEntities() {
         try {
-            // Player
-            player = new Player(120, 180, 40, 40);
+            // Player - position de départ valide
+            Position playerStart = tileMap.findValidStartPosition(28, 28);
+            player = new Player(playerStart.x(), playerStart.y(), 28, 28);
             player.setWalls(walls);
             entities.add(player);
 
-            // Ennemis
-            Enemy e1 = new Enemy(300, 180, 30, 30, walls);
-            Enemy e2 = new Enemy(500, 250, 30, 30, walls);
-            Enemy e3 = new Enemy(400, 100, 30, 30, walls);
-            enemies.add(e1);
-            enemies.add(e2);
-            enemies.add(e3);
-            entities.addAll(enemies);
+            // Ennemis - trouver des positions valides aléatoires
+            for (int i = 0; i < 4; i++) {
+                Position enemyPos = tileMap.findRandomValidPosition(26, 26);
+                Enemy enemy = new Enemy(enemyPos.x(), enemyPos.y(), 26, 26, walls);
+                enemies.add(enemy);
+                entities.add(enemy);
+            }
 
-            // Gems
-            Gem g1 = new Gem(600, 200, 20, 20 , Gem.GemType.BAMBALOUNI);
-            Gem g2 = new Gem(150, 400, 20, 20,  Gem.GemType.HARISSA);
-            Gem g3 = new Gem(700, 350, 20, 20 ,  Gem.GemType.BAMBALOUNI);
-            Gem g4 = new Gem(300, 500, 20, 20 ,  Gem.GemType.HARISSA);
+            // ⭐ GEMS DENSES : Placer un gem dans CHAQUE passage libre
+            int gemCount = 0;
+            int[][] grid = tileMap.getGrid();
+            double gemSize = 8; // Petits gems comme Pac-Man
 
-            gems.add(g1);
-            gems.add(g2);
-            gems.add(g3);
-            gems.add(g4);
-            entities.addAll(gems);
+            for (int row = 1; row < tileMap.getRows() - 1; row++) {
+                for (int col = 1; col < tileMap.getCols() - 1; col++) {
+                    // Si c'est un passage (pas un mur)
+                    if (grid[row][col] == 0) {
+                        double x = col * tileMap.getCellSize() + (tileMap.getCellSize() - gemSize) / 2;
+                        double y = row * tileMap.getCellSize() + (tileMap.getCellSize() - gemSize) / 2;
+
+                        // Vérifier que c'est loin du joueur
+                        double distToPlayer = Math.sqrt(
+                                Math.pow(x - playerStart.x(), 2) +
+                                        Math.pow(y - playerStart.y(), 2)
+                        );
+
+                        // Vérifier que c'est loin des ennemis
+                        boolean tooCloseToEnemy = false;
+                        for (Enemy enemy : enemies) {
+                            double distToEnemy = Math.sqrt(
+                                    Math.pow(x - enemy.getX(), 2) +
+                                            Math.pow(y - enemy.getY(), 2)
+                            );
+                            if (distToEnemy < 40) {
+                                tooCloseToEnemy = true;
+                                break;
+                            }
+                        }
+
+                        // Placer le gem si conditions OK
+                        if (distToPlayer > 60 && !tooCloseToEnemy) {
+                            Gem.GemType type = (gemCount % 2 == 0) ? Gem.GemType.BAMBALOUNI : Gem.GemType.HARISSA;
+                            Gem gem = new Gem(x, y, gemSize, gemSize, type);
+                            gems.add(gem);
+                            entities.add(gem);
+                            gemCount++;
+                        }
+                    }
+                }
+            }
+
+            System.out.println("✅ " + gemCount + " gems placés dans le labyrinthe (mode dense)");
 
         } catch (InvalidPositionException e) {
             e.printStackTrace();
@@ -122,24 +166,49 @@ public class GameController implements Updatable {
 
     private void setupStartButton() {
         startButton.setOnAction(event -> {
-            startGameLoop();
+            startButton.setVisible(false);
+
+            setupKeyboardInput();
+
             gameCanvas.setFocusTraversable(true);
             gameCanvas.requestFocus();
-            setupKeyboardInput();
+
+            startGameLoop();
+
+            javafx.application.Platform.runLater(() -> {
+                gameCanvas.requestFocus();
+            });
         });
     }
 
+    // ⭐ Gestion du clavier avec Set<KeyCode>
     private void setupKeyboardInput() {
         gameCanvas.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case UP -> player.setDirection(Player.Direction.UP);
-                case DOWN -> player.setDirection(Player.Direction.DOWN);
-                case LEFT -> player.setDirection(Player.Direction.LEFT);
-                case RIGHT -> player.setDirection(Player.Direction.RIGHT);
-            }
+            pressedKeys.add(event.getCode());
+            updatePlayerDirection();
+            event.consume();
         });
 
-        gameCanvas.setOnKeyReleased(event -> player.setDirection(Player.Direction.NONE));
+        gameCanvas.setOnKeyReleased(event -> {
+            pressedKeys.remove(event.getCode());
+            updatePlayerDirection();
+            event.consume();
+        });
+    }
+
+    // Met à jour la direction selon les touches enfoncées
+    private void updatePlayerDirection() {
+        if (pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.Z)) {
+            player.setDirection(Player.Direction.UP);
+        } else if (pressedKeys.contains(KeyCode.DOWN) || pressedKeys.contains(KeyCode.S)) {
+            player.setDirection(Player.Direction.DOWN);
+        } else if (pressedKeys.contains(KeyCode.LEFT) || pressedKeys.contains(KeyCode.Q)) {
+            player.setDirection(Player.Direction.LEFT);
+        } else if (pressedKeys.contains(KeyCode.RIGHT) || pressedKeys.contains(KeyCode.D)) {
+            player.setDirection(Player.Direction.RIGHT);
+        } else {
+            player.setDirection(Player.Direction.NONE);
+        }
     }
 
     private void startGameLoop() {
@@ -152,21 +221,22 @@ public class GameController implements Updatable {
     public void update(double deltaTime) {
         if (gameOver) return;
 
-        // Effet visuel si le joueur a été touché
+        // Effet visuel de collision
         if (playerHit) {
             hitEffectTime -= deltaTime;
             if (hitEffectTime <= 0) {
                 playerHit = false;
                 player.setShakeOffset(0, 0);
+                player.setGlow(false);
             } else {
-                // Apply shake effect : oscillation rapide
                 double offsetX = (Math.random() - 0.5) * 10;
                 double offsetY = (Math.random() - 0.5) * 10;
                 player.setShakeOffset(offsetX, offsetY);
+                player.setGlow(true);
             }
         }
 
-        // Mise à jour du player
+        // Mise à jour du joueur
         player.update(deltaTime);
 
         // Mise à jour des ennemis
@@ -178,9 +248,9 @@ public class GameController implements Updatable {
                 .filter(g -> player.getBounds().intersects(g.getBounds()))
                 .forEach(g -> {
                     g.collect();
-                    score++;
+                    score += 10;
                     scoreLabel.setText("Score: " + score);
-                    showMessage("Gem collected!", 1.5);
+                    showMessage("Gem collecté!", 1);
                 });
 
         // Collision player <-> ennemis
@@ -188,54 +258,33 @@ public class GameController implements Updatable {
                 .filter(enemy -> player.getBounds().intersects(enemy.getBounds()))
                 .forEach(enemy -> {
                     lives--;
-                    livesLabel.setText("Lives: " + lives);
-                    showMessage("Enemy hit!", 1);
+                    livesLabel.setText("Vies: " + lives);
+                    showMessage("Touché par un fantôme!", 1.5);
 
-                    // ★ Effets visuels déclenchés ici ★
                     playerHit = true;
-                    hitEffectTime = 0.6; // durée de l'effet
+                    hitEffectTime = 0.8;
 
-                    player.moveTo(new Position(120, 180));
+                    // ⭐ FIX : Utiliser une position valide pour respawn
+                    Position respawnPos = tileMap.findValidStartPosition(28, 28);
+                    player.moveTo(respawnPos);
+                    System.out.println("🔄 Player respawn à (" + respawnPos.x() + ", " + respawnPos.y() + ")");
 
                     if (lives <= 0) triggerGameOver();
                 });
 
-        // Tous les gems collectés ?
+        // Vérifier victoire
         boolean allGemsCollected = gems.stream().noneMatch(Gem::isVisible);
-        if (allGemsCollected) {
-            if (lives > 0) triggerWinGame();
-            else triggerGameOver();
+        if (allGemsCollected && lives > 0) {
+            triggerWinGame();
         }
 
         render();
     }
 
-
-    private void triggerWinGame() {
-        stopGame();
-        gameOver = true;
-
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameWinUI.fxml"));
-            Scene winScene = new Scene(loader.load());
-
-            // Récupérer le contrôleur et lui envoyer le score final
-            GameWinController controller = loader.getController();
-            controller.setFinalScore(score);
-
-            Stage stage = (Stage) gameCanvas.getScene().getWindow();
-            stage.setScene(winScene);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-
     private void render() {
         GraphicsContext gc = gameCanvas.getGraphicsContext2D();
-        gc.setFill(Color.DARKGRAY);
-        gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+
+        tileMap.render(gc);
 
         entities.stream()
                 .filter(e -> e instanceof Entity entity && entity.isVisible())
@@ -250,27 +299,17 @@ public class GameController implements Updatable {
         stopGame();
         gameOver = true;
 
-        // 🔥 Stopper la musique de fond
-        if (bgMusicPlayer != null) {
-            bgMusicPlayer.stop();
-        }
-
-        // 🔊 Jouer le son d'échec
-        if (gameOverSound != null) {
-            gameOverSound.play();
-        }
+        if (bgMusicPlayer != null) bgMusicPlayer.stop();
+        if (gameOverSound != null) gameOverSound.play();
 
         try {
-            // Charger le FXML
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getResource("/com/example/gemcollector/entities/GameOverUI.fxml"));
             AnchorPane root = loader.load();
 
-            // Récupérer le contrôleur et passer le score final
             GameOverController controller = loader.getController();
             controller.setFinalScore(score);
 
-            // Créer la scène et l'afficher
             Scene scene = new Scene(root);
             Stage stage = (Stage) gameCanvas.getScene().getWindow();
             stage.setScene(scene);
@@ -281,8 +320,23 @@ public class GameController implements Updatable {
         }
     }
 
+    private void triggerWinGame() {
+        stopGame();
+        gameOver = true;
 
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameWinUI.fxml"));
+            Scene winScene = new Scene(loader.load());
 
+            GameWinController controller = loader.getController();
+            controller.setFinalScore(score);
+
+            Stage stage = (Stage) gameCanvas.getScene().getWindow();
+            stage.setScene(winScene);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void showMessage(String message, double durationSeconds) {
         messageLabel.setText(message);
@@ -292,15 +346,23 @@ public class GameController implements Updatable {
     }
 
     public void launchNewTrial() {
-        if (lives <= 0) return;
-
         score = 0;
-        scoreLabel.setText("Score: " + score);
-        player.moveTo(new Position(120, 180));
+        lives = 3;
+        gameOver = false;
+        pressedKeys.clear(); // ⭐ IMPORTANT : vider les touches
 
-        gems.forEach(g -> g.setVisible(true));
+        scoreLabel.setText("Score: 0");
+        livesLabel.setText("Vies: 3");
 
-        showMessage("Nouvelle épreuve !", 2);
-        startGameLoop();
+        entities.clear();
+        enemies.clear();
+        gems.clear();
+
+        tileMap = new TileMap(gameCanvas.getWidth(), gameCanvas.getHeight(), CELL_SIZE);
+        walls = tileMap.getWalls();
+        initEntities();
+
+        startButton.setVisible(true);
+        render();
     }
 }

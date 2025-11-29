@@ -11,7 +11,7 @@ public final class Wall extends Entity {
 
     @Override
     public void render(GraphicsContext gc) {
-        gc.setFill(Color.DARKBLUE); // couleur du mur
+        gc.setFill(Color.rgb(0, 90, 170));
         gc.fillRect(position.x(), position.y(), size.width(), size.height());
     }
 
