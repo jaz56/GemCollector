@@ -9,13 +9,13 @@ public non-sealed class Enemy extends Entity implements Updatable {
 
     private final Random random = new Random();
 
-    private double speed = 2;            // vitesse
-    private double dx = 0;               // direction X
-    private double dy = 0;               // direction Y
+    private double speed = 1.5; // ⭐ Réduit de 2 à 1.5 (plus lent que le player)
+    private double dx = 0;
+    private double dy = 0;
     private double changeDirectionCooldown = 0;
 
-    private Image sprite;                // sprite du fantôme
-    private final List<Wall> walls;      // murs pour collisions
+    private Image sprite;
+    private final List<Wall> walls;
 
     public Enemy(double x, double y, double width, double height, List<Wall> walls)
             throws InvalidPositionException {
@@ -23,8 +23,11 @@ public non-sealed class Enemy extends Entity implements Updatable {
         super(x, y, width, height);
         this.walls = walls;
 
-        // Sprite fantôme par défaut (assure-toi qu'il existe)
-        sprite = new Image(getClass().getResourceAsStream("/com/example/gemcollector/entities/images/ghost_blue-removebg-preview.png"));
+        try {
+            sprite = new Image(getClass().getResourceAsStream("/com/example/gemcollector/entities/images/ghost_blue-removebg-preview.png"));
+        } catch (Exception e) {
+            sprite = null;
+        }
 
         chooseNewDirection();
         changeDirectionCooldown = 1 + random.nextDouble() * 2;
@@ -34,11 +37,9 @@ public non-sealed class Enemy extends Entity implements Updatable {
     public void render(GraphicsContext gc) {
         if (!visible) return;
 
-        // Si le sprite existe, on l'affiche
         if (sprite != null) {
             gc.drawImage(sprite, position.x(), position.y(), size.width(), size.height());
         } else {
-            // fallback si jamais l'image n'est pas trouvée
             gc.setFill(javafx.scene.paint.Color.RED);
             gc.fillRect(position.x(), position.y(), size.width(), size.height());
         }
@@ -46,24 +47,16 @@ public non-sealed class Enemy extends Entity implements Updatable {
 
     @Override
     public void update(double deltaTime) {
-
-        // Déplacement
         move(dx * speed, dy * speed);
 
-        // Vérification collisions avec les murs
         for (Wall wall : walls) {
             if (getBounds().intersects(wall.getBounds())) {
-
-                // Revenir en arrière
                 move(-dx * speed, -dy * speed);
-
-                // Changer de direction
                 chooseNewDirection();
                 break;
             }
         }
 
-        // Changement automatique de direction
         changeDirectionCooldown -= deltaTime;
         if (changeDirectionCooldown <= 0) {
             chooseNewDirection();
@@ -71,17 +64,14 @@ public non-sealed class Enemy extends Entity implements Updatable {
         }
     }
 
-    /**
-     * Choisir une direction aléatoire parmi UP / DOWN / LEFT / RIGHT.
-     */
     private void chooseNewDirection() {
         int dir = random.nextInt(4);
 
         switch (dir) {
-            case 0 -> { dx = 0; dy = -1; } // UP
-            case 1 -> { dx = 0; dy = 1; }  // DOWN
-            case 2 -> { dx = -1; dy = 0; } // LEFT
-            case 3 -> { dx = 1; dy = 0; }  // RIGHT
+            case 0 -> { dx = 0; dy = -1; }
+            case 1 -> { dx = 0; dy = 1; }
+            case 2 -> { dx = -1; dy = 0; }
+            case 3 -> { dx = 1; dy = 0; }
         }
     }
 }

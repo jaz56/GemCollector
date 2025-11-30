@@ -41,8 +41,6 @@ public class GameController implements Updatable {
     private List<Wall> walls = new ArrayList<>();
 
     private final List<Updatable> entities = new ArrayList<>();
-
-    // ⭐ SOLUTION : Set pour tracker les touches enfoncées
     private final Set<KeyCode> pressedKeys = new HashSet<>();
 
     private int score = 0;
@@ -57,7 +55,7 @@ public class GameController implements Updatable {
     private MediaPlayer bgMusicPlayer;
 
     private Random random = new Random();
-    private static final double CELL_SIZE = 32;
+    private static final double CELL_SIZE = 40; // ⭐ Augmenté pour plus d'espace
 
     @FXML
     public void initialize() {
@@ -95,58 +93,51 @@ public class GameController implements Updatable {
         }
     }
 
-    // ⭐ VERSION ALTERNATIVE avec gems TRÈS DENSES comme Pac-Man
-// Remplace initEntities() dans GameController si tu veux plus de gems
-
     private void initEntities() {
         try {
-            // Player - position de départ valide
-            Position playerStart = tileMap.findValidStartPosition(28, 28);
-            player = new Player(playerStart.x(), playerStart.y(), 28, 28);
+            // ⭐ Player proportionnel aux cellules (35x35 pour cellules de 40x40)
+            Position playerStart = tileMap.findValidStartPosition(35, 35);
+            player = new Player(playerStart.x(), playerStart.y(), 35, 35);
             player.setWalls(walls);
             entities.add(player);
 
-            // Ennemis - trouver des positions valides aléatoires
+            // Ennemis légèrement plus petits
             for (int i = 0; i < 4; i++) {
-                Position enemyPos = tileMap.findRandomValidPosition(26, 26);
-                Enemy enemy = new Enemy(enemyPos.x(), enemyPos.y(), 26, 26, walls);
+                Position enemyPos = tileMap.findRandomValidPosition(32, 32);
+                Enemy enemy = new Enemy(enemyPos.x(), enemyPos.y(), 32, 32, walls);
                 enemies.add(enemy);
                 entities.add(enemy);
             }
 
-            // ⭐ GEMS DENSES : Placer un gem dans CHAQUE passage libre
+            // ⭐ GEMS DENSES : Un gem dans chaque passage
             int gemCount = 0;
             int[][] grid = tileMap.getGrid();
-            double gemSize = 8; // Petits gems comme Pac-Man
+            double gemSize = 10; // Gems visibles mais pas trop gros
 
             for (int row = 1; row < tileMap.getRows() - 1; row++) {
                 for (int col = 1; col < tileMap.getCols() - 1; col++) {
-                    // Si c'est un passage (pas un mur)
                     if (grid[row][col] == 0) {
                         double x = col * tileMap.getCellSize() + (tileMap.getCellSize() - gemSize) / 2;
                         double y = row * tileMap.getCellSize() + (tileMap.getCellSize() - gemSize) / 2;
 
-                        // Vérifier que c'est loin du joueur
                         double distToPlayer = Math.sqrt(
                                 Math.pow(x - playerStart.x(), 2) +
                                         Math.pow(y - playerStart.y(), 2)
                         );
 
-                        // Vérifier que c'est loin des ennemis
                         boolean tooCloseToEnemy = false;
                         for (Enemy enemy : enemies) {
                             double distToEnemy = Math.sqrt(
                                     Math.pow(x - enemy.getX(), 2) +
                                             Math.pow(y - enemy.getY(), 2)
                             );
-                            if (distToEnemy < 40) {
+                            if (distToEnemy < 45) {
                                 tooCloseToEnemy = true;
                                 break;
                             }
                         }
 
-                        // Placer le gem si conditions OK
-                        if (distToPlayer > 60 && !tooCloseToEnemy) {
+                        if (distToPlayer > 70 && !tooCloseToEnemy) {
                             Gem.GemType type = (gemCount % 2 == 0) ? Gem.GemType.BAMBALOUNI : Gem.GemType.HARISSA;
                             Gem gem = new Gem(x, y, gemSize, gemSize, type);
                             gems.add(gem);
@@ -157,7 +148,7 @@ public class GameController implements Updatable {
                 }
             }
 
-            System.out.println("✅ " + gemCount + " gems placés dans le labyrinthe (mode dense)");
+            System.out.println("✅ " + gemCount + " gems placés dans le labyrinthe");
 
         } catch (InvalidPositionException e) {
             e.printStackTrace();
@@ -181,7 +172,6 @@ public class GameController implements Updatable {
         });
     }
 
-    // ⭐ Gestion du clavier avec Set<KeyCode>
     private void setupKeyboardInput() {
         gameCanvas.setOnKeyPressed(event -> {
             pressedKeys.add(event.getCode());
@@ -196,7 +186,6 @@ public class GameController implements Updatable {
         });
     }
 
-    // Met à jour la direction selon les touches enfoncées
     private void updatePlayerDirection() {
         if (pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.Z)) {
             player.setDirection(Player.Direction.UP);
@@ -221,7 +210,6 @@ public class GameController implements Updatable {
     public void update(double deltaTime) {
         if (gameOver) return;
 
-        // Effet visuel de collision
         if (playerHit) {
             hitEffectTime -= deltaTime;
             if (hitEffectTime <= 0) {
@@ -236,10 +224,7 @@ public class GameController implements Updatable {
             }
         }
 
-        // Mise à jour du joueur
         player.update(deltaTime);
-
-        // Mise à jour des ennemis
         enemies.forEach(enemy -> enemy.update(deltaTime));
 
         // Collision player <-> gems
@@ -253,7 +238,7 @@ public class GameController implements Updatable {
                     showMessage("Gem collecté!", 1);
                 });
 
-        // Collision player <-> ennemis
+        // ⭐ Collision player <-> ennemis AVEC RESPAWN CORRECT
         enemies.stream()
                 .filter(enemy -> player.getBounds().intersects(enemy.getBounds()))
                 .forEach(enemy -> {
@@ -264,15 +249,16 @@ public class GameController implements Updatable {
                     playerHit = true;
                     hitEffectTime = 0.8;
 
-                    // ⭐ FIX : Utiliser une position valide pour respawn
-                    Position respawnPos = tileMap.findValidStartPosition(28, 28);
+                    // ⭐ CRITIQUE : Utiliser les vraies dimensions du player
+                    Position respawnPos = tileMap.findValidStartPosition(
+                            player.getWidth(),
+                            player.getHeight()
+                    );
                     player.moveTo(respawnPos);
-                    System.out.println("🔄 Player respawn à (" + respawnPos.x() + ", " + respawnPos.y() + ")");
 
                     if (lives <= 0) triggerGameOver();
                 });
 
-        // Vérifier victoire
         boolean allGemsCollected = gems.stream().noneMatch(Gem::isVisible);
         if (allGemsCollected && lives > 0) {
             triggerWinGame();
@@ -349,7 +335,7 @@ public class GameController implements Updatable {
         score = 0;
         lives = 3;
         gameOver = false;
-        pressedKeys.clear(); // ⭐ IMPORTANT : vider les touches
+        pressedKeys.clear();
 
         scoreLabel.setText("Score: 0");
         livesLabel.setText("Vies: 3");
