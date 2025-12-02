@@ -2,58 +2,60 @@ package gemcollector.entities;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class GameWinController {
 
     @FXML
     private Label finalScoreLabel;
 
-    @FXML
-    private Button playAgainButton;
-
-    @FXML
-    private Button quitButton;
-
-    private int finalScore;
-
     public void setFinalScore(int score) {
-        this.finalScore = score;
-        finalScoreLabel.setText("Score final : " + finalScore);
+        if (finalScoreLabel != null) {
+            finalScoreLabel.setText("Score Final: " + score);
+        }
     }
 
     @FXML
-    public void initialize() {
+    public void handleRestartClick() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/example/gemcollector/entities/GameUI.fxml")
+            );
+            Parent root = loader.load();
 
-        // Bouton Restart -> relancer une nouvelle session propre
-        playAgainButton.setOnAction(event -> {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameUI.fxml"));
-                Scene gameScene = new Scene(loader.load());
+            Stage stage = (Stage) finalScoreLabel.getScene().getWindow();
+            stage.setScene(new Scene(root, 800, 600));
 
-                // Récupérer le GameController pour réinitialiser la partie
-                GameController controller = loader.getController();
+            System.out.println("🔄 Jeu redémarré!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-                // Lancer une nouvelle session (score = 0, vies = réinitialisées)
-                controller.launchNewTrial();
+    // ⭐ NOUVEAU : Retour au menu principal
+    @FXML
+    public void handleBackToMenuClick() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/example/gemcollector/entities/MainMenu.fxml")
+            );
+            Parent root = loader.load();
 
-                Stage stage = (Stage) playAgainButton.getScene().getWindow();
-                stage.setScene(gameScene);
+            Stage stage = (Stage) finalScoreLabel.getScene().getWindow();
+            stage.setScene(new Scene(root, 700, 700));
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+            System.out.println("🏠 Retour au menu principal!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-        // Bouton Quit -> quitter
-        quitButton.setOnAction(event -> {
-            Stage stage = (Stage) quitButton.getScene().getWindow();
-            stage.close();
-        });
+    @FXML
+    public void handleNextLevelClick() {
+        System.out.println("🎯 Niveau suivant - À implémenter!");
+        // TODO: Charger le niveau suivant
     }
 }

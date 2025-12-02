@@ -17,7 +17,6 @@ public final class Wall extends Entity {
 
     @Override
     public void update(double deltaTime) {
-        // les murs ne bougent pas
     }
 
 }

@@ -9,7 +9,7 @@ public non-sealed class Enemy extends Entity implements Updatable {
 
     private final Random random = new Random();
 
-    private double speed = 1.5; // ⭐ Réduit de 2 à 1.5 (plus lent que le player)
+    private double speed = 1.5;
     private double dx = 0;
     private double dy = 0;
     private double changeDirectionCooldown = 0;

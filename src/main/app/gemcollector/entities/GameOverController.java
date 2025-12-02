@@ -2,77 +2,54 @@ package gemcollector.entities;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class GameOverController {
 
     @FXML
-    private Button restartButton;
-
-    @FXML
-    private Button quitButton;
-
-    @FXML
-    private Label gameOverLabel;
-
-    @FXML
-    private Label scoreLabel;
-
-    private int finalScore;
+    private Label finalScoreLabel;
 
     public void setFinalScore(int score) {
-        this.finalScore = score;
-        if (scoreLabel != null) {
-            scoreLabel.setText("Score: " + finalScore);
+        if (finalScoreLabel != null) {
+            finalScoreLabel.setText("Score Final: " + score);
         }
     }
+
     @FXML
-    public void initialize() {
-        // Centrer les boutons en code si nécessaire
-        restartButton.setLayoutX((800 - restartButton.getPrefWidth()) / 2);
-        quitButton.setLayoutX((800 - quitButton.getPrefWidth()) / 2);
-
-        // Action bouton restart
-        restartButton.setOnAction(event -> restartGame());
-
-        // Action bouton quit
-        quitButton.setOnAction(event -> {
-            Stage stage = (Stage) quitButton.getScene().getWindow();
-            stage.close();
-        });
-    }
-
-    /** =======================
-     *  Permet au GameController
-     *  d'envoyer le score final
-     *  ======================= */
-
-
-    /** ========= RESTART GAME ========= */
-    private void restartGame() {
+    public void handleRestartClick() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/gemcollector/entities/GameUI.fxml"));
-            Stage stage = (Stage) restartButton.getScene().getWindow();
-            Scene scene = new Scene(loader.load());
-            stage.setScene(scene);
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/example/gemcollector/entities/GameUI.fxml")
+            );
+            Parent root = loader.load();
 
-            // Récupérer le controller du jeu pour lancer une nouvelle partie
-            GameController gameController = loader.getController();
-            gameController.launchNewTrial();
+            Stage stage = (Stage) finalScoreLabel.getScene().getWindow();
+            stage.setScene(new Scene(root, 800, 600));
 
-        } catch (IOException e) {
+            System.out.println("🔄 Jeu redémarré!");
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /** ========= QUIT GAME ========= */
-    private void quitGame() {
-        Stage stage = (Stage) quitButton.getScene().getWindow();
-        stage.close();
+    // ⭐ NOUVEAU : Retour au menu principal
+    @FXML
+    public void handleBackToMenuClick() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/example/gemcollector/entities/MainMenu.fxml")
+            );
+            Parent root = loader.load();
+
+            Stage stage = (Stage) finalScoreLabel.getScene().getWindow();
+            stage.setScene(new Scene(root, 700, 700));
+
+            System.out.println("🏠 Retour au menu principal!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
 public non-sealed class Player extends Entity implements Updatable {
 
     private Image sprite;
-    private double speed = 3; // ⭐ Réduit de 6 à 3 (50% plus lent)
+    private double speed = 3;
     private Direction direction = Direction.NONE;
     private List<Wall> walls;
     private double shakeX = 0;

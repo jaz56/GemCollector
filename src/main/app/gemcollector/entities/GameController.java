@@ -28,11 +28,16 @@ import java.util.Set;
 
 public class GameController implements Updatable {
 
-    @FXML private Canvas gameCanvas;
-    @FXML private Label scoreLabel;
-    @FXML private Label livesLabel;
-    @FXML private Button startButton;
-    @FXML private Label messageLabel;
+    @FXML
+    private Canvas gameCanvas;
+    @FXML
+    private Label scoreLabel;
+    @FXML
+    private Label livesLabel;
+    @FXML
+    private Button startButton;
+    @FXML
+    private Label messageLabel;
 
     private TileMap tileMap;
     private Player player;
@@ -95,13 +100,11 @@ public class GameController implements Updatable {
 
     private void initEntities() {
         try {
-            // ⭐ Player proportionnel aux cellules (35x35 pour cellules de 40x40)
             Position playerStart = tileMap.findValidStartPosition(35, 35);
             player = new Player(playerStart.x(), playerStart.y(), 35, 35);
             player.setWalls(walls);
             entities.add(player);
 
-            // Ennemis légèrement plus petits
             for (int i = 0; i < 4; i++) {
                 Position enemyPos = tileMap.findRandomValidPosition(32, 32);
                 Enemy enemy = new Enemy(enemyPos.x(), enemyPos.y(), 32, 32, walls);
@@ -109,10 +112,9 @@ public class GameController implements Updatable {
                 entities.add(enemy);
             }
 
-            // ⭐ GEMS DENSES : Un gem dans chaque passage
             int gemCount = 0;
             int[][] grid = tileMap.getGrid();
-            double gemSize = 10; // Gems visibles mais pas trop gros
+            double gemSize = 10;
 
             for (int row = 1; row < tileMap.getRows() - 1; row++) {
                 for (int col = 1; col < tileMap.getCols() - 1; col++) {
@@ -147,8 +149,6 @@ public class GameController implements Updatable {
                     }
                 }
             }
-
-            System.out.println("✅ " + gemCount + " gems placés dans le labyrinthe");
 
         } catch (InvalidPositionException e) {
             e.printStackTrace();
@@ -226,8 +226,8 @@ public class GameController implements Updatable {
 
         player.update(deltaTime);
         enemies.forEach(enemy -> enemy.update(deltaTime));
+// les streams
 
-        // Collision player <-> gems
         gems.stream()
                 .filter(Gem::isVisible)
                 .filter(g -> player.getBounds().intersects(g.getBounds()))
@@ -237,8 +237,6 @@ public class GameController implements Updatable {
                     scoreLabel.setText("Score: " + score);
                     showMessage("Gem collecté!", 1);
                 });
-
-        // ⭐ Collision player <-> ennemis AVEC RESPAWN CORRECT
         enemies.stream()
                 .filter(enemy -> player.getBounds().intersects(enemy.getBounds()))
                 .forEach(enemy -> {
@@ -249,7 +247,6 @@ public class GameController implements Updatable {
                     playerHit = true;
                     hitEffectTime = 0.8;
 
-                    // ⭐ CRITIQUE : Utiliser les vraies dimensions du player
                     Position respawnPos = tileMap.findValidStartPosition(
                             player.getWidth(),
                             player.getHeight()

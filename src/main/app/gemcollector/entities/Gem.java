@@ -10,7 +10,6 @@ public final class Gem extends Entity implements Updatable {
     private Image sprite;
     private GemType type;
 
-    // Gem types
     public enum GemType {
         HARISSA("/com/example/gemcollector/entities/images/harrissa-removebg-preview.png"),
         BAMBALOUNI("/com/example/gemcollector/entities/images/bambalouni-removebg-preview.png");
@@ -26,14 +25,12 @@ public final class Gem extends Entity implements Updatable {
         }
     }
 
-    // Constructor
     public Gem(double x, double y, double width, double height, GemType type)
             throws InvalidPositionException {
         super(x, y, width * 2.5, height * 2.5);  // bigger gems
 
         this.type = type;
 
-        // Load sprite depending on type
         sprite = new Image(getClass().getResourceAsStream(type.getPath()));
     }
 

@@ -6,9 +6,8 @@ import javafx.scene.paint.Color;
 
 public sealed abstract class Entity implements GameEntity , Updatable permits Player, Enemy, Gem , Wall{//ajouter une classe sealed
 
-    protected Position position;   // Nouveau : position immuable
-    protected Size size;           // Nouveau : taille immuable
-
+    protected Position position;
+    protected Size size;
     protected boolean visible = true;
 
     public Entity(double x, double y, double width, double height) throws InvalidPositionException {
@@ -38,12 +37,10 @@ public sealed abstract class Entity implements GameEntity , Updatable permits Pl
         return size.height();
     }
 
-    /** Déplacer vers un nouvel emplacement */
     public void moveTo(Position newPos) {
         this.position = newPos;
     }
 
-    /** Déplacement relatif */
     public void move(double dx, double dy) {
         this.position = new Position(position.x() + dx, position.y() + dy);
     }
