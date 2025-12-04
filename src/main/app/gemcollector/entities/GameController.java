@@ -5,6 +5,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -15,7 +16,9 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.io.IOException;
@@ -28,16 +31,13 @@ import java.util.Set;
 
 public class GameController implements Updatable {
 
-    @FXML
-    private Canvas gameCanvas;
-    @FXML
-    private Label scoreLabel;
-    @FXML
-    private Label livesLabel;
-    @FXML
-    private Button startButton;
-    @FXML
-    private Label messageLabel;
+    @FXML private Canvas gameCanvas;
+    @FXML private Label scoreLabel;
+    @FXML private Label livesLabel;
+    @FXML private Button startButton;
+    @FXML private Button pauseButton;
+    @FXML private Label messageLabel;
+    @FXML private Label instructionsLabel;
 
     private TileMap tileMap;
     private Player player;
@@ -51,6 +51,7 @@ public class GameController implements Updatable {
     private int score = 0;
     private int lives = 3;
     private boolean gameOver = false;
+    private boolean isPaused = false;
 
     private Timeline gameLoop;
     private boolean playerHit = false;
@@ -60,7 +61,7 @@ public class GameController implements Updatable {
     private MediaPlayer bgMusicPlayer;
 
     private Random random = new Random();
-    private static final double CELL_SIZE = 40; // ⭐ Augmenté pour plus d'espace
+    private static final double CELL_SIZE = 40;
 
     @FXML
     public void initialize() {
@@ -159,11 +160,17 @@ public class GameController implements Updatable {
         startButton.setOnAction(event -> {
             startButton.setVisible(false);
 
-            setupKeyboardInput();
+            // ⭐ Afficher le bouton pause et masquer les instructions
+            if (pauseButton != null) {
+                pauseButton.setVisible(true);
+            }
+            if (instructionsLabel != null) {
+                instructionsLabel.setVisible(false);
+            }
 
+            setupKeyboardInput();
             gameCanvas.setFocusTraversable(true);
             gameCanvas.requestFocus();
-
             startGameLoop();
 
             javafx.application.Platform.runLater(() -> {
@@ -172,8 +179,23 @@ public class GameController implements Updatable {
         });
     }
 
+    // ⭐ NOUVEAU : Gestion du clic sur le bouton Pause
+    @FXML
+    public void handlePauseClick() {
+        pauseGame();
+    }
+
     private void setupKeyboardInput() {
         gameCanvas.setOnKeyPressed(event -> {
+            // ⭐ Gestion de la touche ESCAPE pour pause
+            if (event.getCode() == KeyCode.ESCAPE) {
+                if (!isPaused && !gameOver) {
+                    pauseGame();
+                }
+                event.consume();
+                return;
+            }
+
             pressedKeys.add(event.getCode());
             updatePlayerDirection();
             event.consume();
@@ -187,6 +209,8 @@ public class GameController implements Updatable {
     }
 
     private void updatePlayerDirection() {
+        if (isPaused) return;
+
         if (pressedKeys.contains(KeyCode.UP) || pressedKeys.contains(KeyCode.Z)) {
             player.setDirection(Player.Direction.UP);
         } else if (pressedKeys.contains(KeyCode.DOWN) || pressedKeys.contains(KeyCode.S)) {
@@ -206,9 +230,102 @@ public class GameController implements Updatable {
         gameLoop.play();
     }
 
+    // ⭐ Méthode pour mettre le jeu en pause
+    public void pauseGame() {
+        if (gameOver || isPaused) return;
+
+        isPaused = true;
+        if (gameLoop != null) {
+            gameLoop.pause();
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/example/gemcollector/entities/PauseMenu.fxml")
+            );
+            Parent pauseRoot = loader.load();
+
+            PauseMenuController pauseController = loader.getController();
+            pauseController.setGameController(this);
+
+            // Créer une scène avec fond transparent
+            Scene pauseScene = new Scene(pauseRoot);
+            pauseScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+
+            Stage pauseStage = new Stage();
+            pauseStage.initModality(Modality.APPLICATION_MODAL);
+            pauseStage.initStyle(StageStyle.TRANSPARENT);
+            pauseStage.setScene(pauseScene);
+            pauseStage.setTitle("Pause");
+
+            // ⭐ Définir la taille exacte de la fenêtre du jeu (800x600)
+            pauseStage.setWidth(800);
+            pauseStage.setHeight(600);
+            pauseStage.setResizable(false);
+
+            // Positionner au même endroit que la fenêtre du jeu
+            Stage gameStage = (Stage) gameCanvas.getScene().getWindow();
+            pauseStage.setX(gameStage.getX());
+            pauseStage.setY(gameStage.getY());
+
+            pauseStage.setOnHidden(e -> {
+                if (isPaused) {
+                    resumeGame();
+                }
+            });
+
+            pauseStage.showAndWait();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ⭐ Méthode pour reprendre le jeu
+    public void resumeGame() {
+        if (!isPaused) return;
+
+        isPaused = false;
+        if (gameLoop != null) {
+            gameLoop.play();
+        }
+
+        javafx.application.Platform.runLater(() -> {
+            if (gameCanvas != null) {
+                gameCanvas.requestFocus();
+            }
+        });
+
+        System.out.println("▶️ Jeu repris!");
+    }
+
+    // ⭐ Contrôle de la musique
+    public void toggleMusic(boolean on) {
+        if (bgMusicPlayer != null) {
+            if (on) {
+                bgMusicPlayer.play();
+            } else {
+                bgMusicPlayer.pause();
+            }
+        }
+    }
+
+    // ⭐ Contrôle du son (alias pour toggleMusic)
+    public void toggleSound(boolean on) {
+        toggleMusic(on);
+    }
+
+    // ⭐ Obtenir la fenêtre principale du jeu
+    public Stage getStage() {
+        if (gameCanvas != null && gameCanvas.getScene() != null) {
+            return (Stage) gameCanvas.getScene().getWindow();
+        }
+        return null;
+    }
+
     @Override
     public void update(double deltaTime) {
-        if (gameOver) return;
+        if (gameOver || isPaused) return;
 
         if (playerHit) {
             hitEffectTime -= deltaTime;
@@ -226,7 +343,6 @@ public class GameController implements Updatable {
 
         player.update(deltaTime);
         enemies.forEach(enemy -> enemy.update(deltaTime));
-// les streams
 
         gems.stream()
                 .filter(Gem::isVisible)
@@ -237,6 +353,7 @@ public class GameController implements Updatable {
                     scoreLabel.setText("Score: " + score);
                     showMessage("Gem collecté!", 1);
                 });
+
         enemies.stream()
                 .filter(enemy -> player.getBounds().intersects(enemy.getBounds()))
                 .forEach(enemy -> {
@@ -275,7 +392,9 @@ public class GameController implements Updatable {
     }
 
     private void stopGame() {
-        if (gameLoop != null) gameLoop.stop();
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
     }
 
     private void triggerGameOver() {
@@ -332,6 +451,7 @@ public class GameController implements Updatable {
         score = 0;
         lives = 3;
         gameOver = false;
+        isPaused = false;
         pressedKeys.clear();
 
         scoreLabel.setText("Score: 0");
