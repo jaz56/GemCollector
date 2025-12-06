@@ -44,20 +44,20 @@ public class MainMenuController {
     // LEVELS - À implémenter plus tard
     @FXML
     public void handleLevelsClick() {
-        System.out.println("Levels - Coming soon!");
+        System.out.println("🎯 Levels - Coming soon!");
         // TODO: Créer différents niveaux de difficulté
     }
 
-    // OPTIONS - À implémenter plus tard
+    // ⭐ OPTIONS - Ouvre le menu des options
     @FXML
     public void handleOptionsClick() {
-        System.out.println("Options - Coming soon!");
-        // TODO: Réglages son, vitesse, etc.
+        loadOptionsScene();
     }
 
     // QUIT
     @FXML
     public void handleQuitClick() {
+        System.out.println("👋 Fermeture du jeu...");
         System.exit(0);
     }
 
@@ -78,6 +78,27 @@ public class MainMenuController {
 
         } catch (Exception e) {
             System.err.println("❌ Erreur lors du chargement du jeu:");
+            e.printStackTrace();
+        }
+    }
+
+    // ⭐ NOUVEAU : Charge la scène des options
+    private void loadOptionsScene() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/example/gemcollector/entities/Options.fxml")
+            );
+            Parent root = loader.load();
+
+            Stage stage = (Stage) optionsButton.getScene().getWindow();
+            Scene optionsScene = new Scene(root, 700, 700);
+            stage.setScene(optionsScene);
+            stage.setTitle("Options - Pac-Man Tunisien");
+
+            System.out.println("⚙️ Menu Options ouvert!");
+
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors du chargement des options:");
             e.printStackTrace();
         }
     }

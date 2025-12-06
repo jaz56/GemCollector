@@ -17,6 +17,11 @@
            style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;
                   -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 5, 0.5, 0, 2);"/>
 
+    <!-- ⭐ NOUVEAU : High Score -->
+    <Label fx:id="highScoreLabel" layoutX="20" layoutY="50" text="🏆 Record: 0"
+           style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ffd700;
+                  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 5, 0.5, 0, 2);"/>
+
     <!-- Vies -->
     <Label fx:id="livesLabel" layoutX="680" layoutY="20" text="Vies: 3"
            style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;

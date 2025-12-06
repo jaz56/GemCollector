@@ -13,16 +13,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.media.AudioClip;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +29,7 @@ public class GameController implements Updatable {
 
     @FXML private Canvas gameCanvas;
     @FXML private Label scoreLabel;
+    @FXML private Label highScoreLabel;
     @FXML private Label livesLabel;
     @FXML private Button startButton;
     @FXML private Button pauseButton;
@@ -57,8 +54,11 @@ public class GameController implements Updatable {
     private boolean playerHit = false;
     private double hitEffectTime = 0;
 
-    private AudioClip gameOverSound;
-    private MediaPlayer bgMusicPlayer;
+    // ⭐ NOUVEAU : Utiliser AudioManager au lieu de variables locales
+    private AudioManager audioManager;
+
+    // ⭐ NOUVEAU : Gestionnaire de sauvegarde avec threads
+    private GameSaveManager saveManager;
 
     private Random random = new Random();
     private static final double CELL_SIZE = 40;
@@ -72,32 +72,33 @@ public class GameController implements Updatable {
         render();
 
         setupStartButton();
-        setupSounds();
-        setupBackgroundMusic();
+
+        // ⭐ NOUVEAU : Initialiser l'AudioManager
+        audioManager = AudioManager.getInstance();
+        audioManager.initBackgroundMusic();
+        audioManager.initSoundEffects();
+        audioManager.playBackgroundMusic();
+
+        // ⭐ Initialiser le système de sauvegarde
+        saveManager = new GameSaveManager(this);
+
+        // Charger les statistiques précédentes
+        saveManager.loadGameStatsAsync(() -> {
+            System.out.println("📂 Statistiques chargées!");
+            saveManager.printStats();
+
+            // ⭐ Afficher le high score dans l'interface
+            if (highScoreLabel != null) {
+                highScoreLabel.setText("🏆 Record: " + saveManager.getHighScore());
+            }
+        });
+
+        // Démarrer la sauvegarde automatique
+        saveManager.startAutoSave();
     }
 
-    private void setupSounds() {
-        try {
-            gameOverSound = new AudioClip(
-                    getClass().getResource("/com/example/gemcollector/entities/sounds/pacman_fail_glitch_long.wav").toExternalForm()
-            );
-        } catch (Exception e) {
-            System.out.println("Son Game Over non trouvé");
-        }
-    }
-
-    private void setupBackgroundMusic() {
-        try {
-            String path = Paths.get("src/main/resources/com/example/gemcollector/entities/sounds/playing-pac-man-6783.mp3").toUri().toString();
-            Media bgMusic = new Media(path);
-            bgMusicPlayer = new MediaPlayer(bgMusic);
-            bgMusicPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-            bgMusicPlayer.setVolume(0.3);
-            bgMusicPlayer.play();
-        } catch (Exception e) {
-            System.out.println("Musique de fond non trouvée");
-        }
-    }
+    // ⭐ Les méthodes setupSounds() et setupBackgroundMusic() ne sont plus nécessaires
+    // car tout est géré par AudioManager
 
     private void initEntities() {
         try {
@@ -239,6 +240,9 @@ public class GameController implements Updatable {
             gameLoop.pause();
         }
 
+        // ⭐ Mettre la musique en pause
+        audioManager.pauseBackgroundMusic();
+
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/example/gemcollector/entities/PauseMenu.fxml")
@@ -290,6 +294,9 @@ public class GameController implements Updatable {
             gameLoop.play();
         }
 
+        // ⭐ Reprendre la musique
+        audioManager.playBackgroundMusic();
+
         javafx.application.Platform.runLater(() -> {
             if (gameCanvas != null) {
                 gameCanvas.requestFocus();
@@ -301,18 +308,17 @@ public class GameController implements Updatable {
 
     // ⭐ Contrôle de la musique
     public void toggleMusic(boolean on) {
-        if (bgMusicPlayer != null) {
-            if (on) {
-                bgMusicPlayer.play();
-            } else {
-                bgMusicPlayer.pause();
-            }
-        }
+        audioManager.setMusicEnabled(on);
     }
 
-    // ⭐ Contrôle du son (alias pour toggleMusic)
+    // ⭐ Contrôle du son
     public void toggleSound(boolean on) {
-        toggleMusic(on);
+        audioManager.setSoundEnabled(on);
+    }
+
+    // ⭐ Contrôle du volume
+    public void setVolume(double volume) {
+        audioManager.setVolume(volume);
     }
 
     // ⭐ Obtenir la fenêtre principale du jeu
@@ -352,6 +358,17 @@ public class GameController implements Updatable {
                     score += 10;
                     scoreLabel.setText("Score: " + score);
                     showMessage("Gem collecté!", 1);
+
+                    // ⭐ NOUVEAU : Mettre à jour les stats
+                    saveManager.updateStats(score, 1, false, false);
+
+                    // ⭐ Mettre à jour le high score en temps réel
+                    if (score > saveManager.getHighScore() && highScoreLabel != null) {
+                        highScoreLabel.setText("🏆 Record: " + score);
+                        highScoreLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; " +
+                                "-fx-text-fill: #ff6b6b; " +
+                                "-fx-effect: dropshadow(gaussian, rgba(255,0,0,0.8), 8, 0.7, 0, 2);");
+                    }
                 });
 
         enemies.stream()
@@ -370,11 +387,20 @@ public class GameController implements Updatable {
                     );
                     player.moveTo(respawnPos);
 
-                    if (lives <= 0) triggerGameOver();
+                    if (lives <= 0) {
+                        // ⭐ NOUVEAU : Sauvegarder avant Game Over
+                        saveManager.updateStats(score, 0, true, true);
+                        triggerGameOver();
+                    } else {
+                        // ⭐ NOUVEAU : Juste une mort
+                        saveManager.updateStats(score, 0, false, true);
+                    }
                 });
 
         boolean allGemsCollected = gems.stream().noneMatch(Gem::isVisible);
         if (allGemsCollected && lives > 0) {
+            // ⭐ NOUVEAU : Victoire = sauvegarder
+            saveManager.updateStats(score, 0, true, false);
             triggerWinGame();
         }
 
@@ -401,8 +427,12 @@ public class GameController implements Updatable {
         stopGame();
         gameOver = true;
 
-        if (bgMusicPlayer != null) bgMusicPlayer.stop();
-        if (gameOverSound != null) gameOverSound.play();
+        // ⭐ Arrêter la musique et jouer le son Game Over
+        audioManager.stopBackgroundMusic();
+        audioManager.playGameOverSound();
+
+        // ⭐ Afficher les stats avant de quitter
+        saveManager.printStats();
 
         try {
             FXMLLoader loader = new FXMLLoader();
@@ -411,6 +441,9 @@ public class GameController implements Updatable {
 
             GameOverController controller = loader.getController();
             controller.setFinalScore(score);
+
+            // ⭐ NOUVEAU : Passer le high score
+            controller.setHighScore(saveManager.getHighScore());
 
             Scene scene = new Scene(root);
             Stage stage = (Stage) gameCanvas.getScene().getWindow();
@@ -467,5 +500,22 @@ public class GameController implements Updatable {
 
         startButton.setVisible(true);
         render();
+
+        // ⭐ NOUVEAU : Réinitialiser le score actuel
+        if (saveManager != null) {
+            saveManager.resetCurrentScore();
+        }
+    }
+
+    // ⭐ NOUVEAU : Arrêt propre du système de sauvegarde
+    public void cleanup() {
+        if (saveManager != null) {
+            saveManager.shutdown();
+        }
+
+        // ⭐ Libérer les ressources audio
+        if (audioManager != null) {
+            audioManager.dispose();
+        }
     }
 }

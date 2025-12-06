@@ -11,10 +11,19 @@ public class GameOverController {
 
     @FXML
     private Label finalScoreLabel;
+    @FXML
+    private Label highScoreLabel;
 
     public void setFinalScore(int score) {
         if (finalScoreLabel != null) {
             finalScoreLabel.setText("Score Final: " + score);
+        }
+    }
+
+    // ⭐ NOUVEAU : Afficher le high score
+    public void setHighScore(int highScore) {
+        if (highScoreLabel != null) {
+            highScoreLabel.setText("🏆 Meilleur Score: " + highScore);
         }
     }
 
@@ -52,4 +61,5 @@ public class GameOverController {
             e.printStackTrace();
         }
     }
+
 }
